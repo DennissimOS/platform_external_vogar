@@ -165,7 +165,7 @@ public enum ModeId {
             case JVM:
                 return Toolchain.JAVAC;
             default:
-                return Toolchain.DX;
+                return Toolchain.D8;
         }
     }
 }

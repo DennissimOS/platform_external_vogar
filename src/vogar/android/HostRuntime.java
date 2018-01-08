@@ -163,8 +163,8 @@ public final class HostRuntime implements Mode {
             dex = new JackDexTask(run, classpath, run.benchmark, name, classpathElement, action,
                     localDex);
         } else {
-            dex = new DexTask(run.androidSdk, classpath, run.benchmark, name, classpathElement,
-                    action, localDex, localTempDir, run.multidex);
+            dex = new DexTask(run.toolchain.getDexer(), run.androidSdk, classpath, run.benchmark, name,
+                    classpathElement, action, localDex, localTempDir, run.multidex);
         }
         return dex;
     }

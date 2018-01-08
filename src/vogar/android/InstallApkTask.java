@@ -78,7 +78,7 @@ public final class InstallApkTask extends Task {
         // because everything gets bundled into classes.dex.
         Classpath dependentCp = new Classpath();
 
-        run.androidSdk.dex(run.multidex, dex, localTempDir, classesToDex, dependentCp);
+        run.androidSdk.dex(run.multidex, dex, localTempDir, classesToDex, dependentCp, run.toolchain.getDexer());
         return dex;
     }
 
