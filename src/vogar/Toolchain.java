@@ -19,8 +19,6 @@ package vogar;
 import vogar.Dexer;
 
 public enum Toolchain {
-    // .dex: Jack
-    JACK,
     // .dex: desugar + javac + dx
     DX,
     // .dex: desugar + javac + d8

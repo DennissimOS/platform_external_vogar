@@ -158,14 +158,7 @@ public final class HostRuntime implements Mode {
 
     private Task createCreateDexJarTask(Classpath classpath, File classpathElement, String name,
             Action action, File localDex, File localTempDir) {
-        Task dex;
-        if (run.toolchain == Toolchain.JACK) {
-            dex = new JackDexTask(run, classpath, run.benchmark, name, classpathElement, action,
-                    localDex);
-        } else {
-            dex = new DexTask(run.toolchain.getDexer(), run.androidSdk, classpath, run.benchmark, name,
-                    classpathElement, action, localDex, localTempDir, run.multidex);
-        }
-        return dex;
+        return new DexTask(run.toolchain.getDexer(), run.androidSdk, classpath, run.benchmark, name,
+                classpathElement, action, localDex, localTempDir, run.multidex);
     }
 }
