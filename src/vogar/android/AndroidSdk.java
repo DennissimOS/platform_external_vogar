@@ -46,6 +46,10 @@ import vogar.util.Strings;
  */
 public class AndroidSdk {
 
+    private static final String D8_COMMAND_NAME = "d8-compat-dx";
+    private static final String DX_COMMAND_NAME = "dx";
+    private static final String ARBITRARY_BUILD_TOOL_NAME = D8_COMMAND_NAME;
+
     private final Log log;
     private final Mkdir mkdir;
     private final File[] compilationClasspath;
@@ -66,14 +70,14 @@ public class AndroidSdk {
      */
     public static AndroidSdk createAndroidSdk(
             Log log, Mkdir mkdir, ModeId modeId, Language language) {
-        List<String> path = new Command.Builder(log).args("which", "dx")
+        List<String> path = new Command.Builder(log).args("which", ARBITRARY_BUILD_TOOL_NAME)
                 .permitNonZeroExitStatus(true)
                 .execute();
         if (path.isEmpty()) {
-            throw new RuntimeException("dx not found");
+            throw new RuntimeException(ARBITRARY_BUILD_TOOL_NAME + " not found");
         }
-        File dx = new File(path.get(0)).getAbsoluteFile();
-        String parentFileName = getParentFileNOrLast(dx, 1).getName();
+        File buildTool = new File(path.get(0)).getAbsoluteFile();
+        String buildToolDirString = getParentFileNOrLast(buildTool, 1).getName();
 
         List<String> adbPath = new Command.Builder(log)
                 .args("which", "adb")
@@ -90,12 +94,6 @@ public class AndroidSdk {
         /*
          * Determine if we are running with a provided SDK or in the AOSP source tree.
          *
-         * On Android SDK v23 (Marshmallow) the structure looks like:
-         *  <sdk>/build-tools/23.0.1/aapt
-         *  <sdk>/platform-tools/adb
-         *  <sdk>/build-tools/23.0.1/dx
-         *  <sdk>/platforms/android-23/android.jar
-         *
          * Android build tree (target):
          *  ${ANDROID_BUILD_TOP}/out/host/linux-x86/bin/aapt
          *  ${ANDROID_BUILD_TOP}/out/host/linux-x86/bin/adb
@@ -111,12 +109,14 @@ public class AndroidSdk {
 
         // Accept that we are running in an SDK if the user has added the build-tools or
         // platform-tools to their path.
-        boolean dxSdkPathValid = "build-tools".equals(getParentFileNOrLast(dx, 2).getName());
+        boolean buildToolsPathValid = "build-tools".equals(getParentFileNOrLast(buildTool, 2)
+                .getName());
         boolean isAdbPathValid = (adb != null) &&
                 "platform-tools".equals(getParentFileNOrLast(adb, 1).getName());
-        if (dxSdkPathValid || isAdbPathValid) {
-            File sdkRoot = dxSdkPathValid ? getParentFileNOrLast(dx, 3)  // if dx path invalid then
-                                          : getParentFileNOrLast(adb, 2);  // adb must be valid.
+        if (buildToolsPathValid || isAdbPathValid) {
+            File sdkRoot = buildToolsPathValid
+                    ? getParentFileNOrLast(buildTool, 3)  // if build tool path invalid then
+                    : getParentFileNOrLast(adb, 2);  // adb must be valid.
             File newestPlatform = getNewestPlatform(sdkRoot);
             log.verbose("Using android platform: " + newestPlatform);
             compilationClasspath = new File[] { new File(newestPlatform, "android.jar") };
@@ -124,14 +124,13 @@ public class AndroidSdk {
                     .getAbsolutePath();
             log.verbose("using android sdk: " + sdkRoot);
 
-            // There must be a desugar.jar in the same directory as dx.
-            String dxParentFileName = getParentFileNOrLast(dx, 1).getName();
-            desugarJarPath = dxParentFileName + "/desugar.jar";
+            // There must be a desugar.jar in the build tool directory.
+            desugarJarPath = buildToolDirString + "/desugar.jar";
             File desugarJarFile = new File(desugarJarPath);
             if (!desugarJarFile.exists()) {
                 throw new RuntimeException("Could not find " + desugarJarPath);
             }
-        } else if ("bin".equals(parentFileName)) {
+        } else if ("bin".equals(buildToolDirString)) {
             log.verbose("Using android source build mode to find dependencies.");
             String tmpJarPath = "prebuilts/sdk/current/android.jar";
             String androidBuildTop = System.getenv("ANDROID_BUILD_TOP");
@@ -188,7 +187,8 @@ public class AndroidSdk {
                 compilationClasspath[i] = new File(String.format(pattern, jar));
             }
         } else {
-            throw new RuntimeException("Couldn't derive Android home from " + dx);
+            throw new RuntimeException("Couldn't derive Android home from "
+                    + ARBITRARY_BUILD_TOOL_NAME);
         }
 
         return new AndroidSdk(log, mkdir, compilationClasspath, androidJarPath, desugarJarPath,
@@ -319,10 +319,10 @@ public class AndroidSdk {
         Command.Builder builder = new Command.Builder(log);
         switch (dexer) {
             case DX:
-                builder.args("dx");
+                builder.args(DX_COMMAND_NAME);
                 break;
             case D8:
-                builder.args("d8-compat-dx");
+                builder.args(D8_COMMAND_NAME);
                 break;
         }
         builder.args("-JXms16M")
