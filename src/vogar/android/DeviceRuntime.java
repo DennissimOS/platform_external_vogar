@@ -89,7 +89,10 @@ public final class DeviceRuntime implements Mode {
                 // _adb_connect in system/core/adb/adb_client.cpp).
                 .maxLength(4096);
         if (run.debugPort != null) {
-            vmCommandBuilder.vmArgs("-Xcompiler-option", "--debuggable");
+            vmCommandBuilder.vmArgs(
+                    "-Xcompiler-option", "--debuggable", "-Xplugin:libopenjdkjvmti.so",
+                    "-agentpath:libjdwp.so=transport=dt_socket,address=" + run.debugPort
+                            + ",server=y,suspend=y");
         }
 
         if (modeId == ModeId.APP_PROCESS) {
